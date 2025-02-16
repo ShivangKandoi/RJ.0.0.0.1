@@ -1,0 +1,95 @@
+.container {
+  width: 100%;
+  max-width: 800px;
+  height: 90vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.messagesContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+}
+
+.welcome h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  color: #ECECF1;
+}
+
+.examples {
+  display: flex;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.examplesGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 600px;
+}
+
+.examplesGroup h2 {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(236,236,241,0.8);
+  margin-bottom: 0.5rem;
+}
+
+.examplesGroup button {
+  background: rgba(236,236,241,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  color: #ECECF1;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 0.875rem;
+}
+
+.examplesGroup button:hover {
+  background: rgba(236,236,241,0.1);
+}
+
+.chatWrapper {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 150px;
+}
+
+.inputWrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1.5rem 1rem;
+  background: linear-gradient(180deg, rgba(52,53,65,0) 0%, #343541 50%);
+}
+
+.disclaimer {
+  text-align: center;
+  font-size: 0.75rem;
+  color: rgba(236,236,241,0.6);
+  margin-top: 0.5rem;
+} 

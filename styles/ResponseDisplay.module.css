@@ -1,0 +1,164 @@
+.responseContainer {
+  width: 100%;
+  max-width: 800px;
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.textResponse {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.aiResponse {
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  line-height: 1.6;
+  font-size: 1.1rem;
+}
+
+.aiResponse p {
+  margin: 0.8em 0;
+}
+
+.aiResponse code {
+  background-color: #f1f1f1;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.9em;
+}
+
+.webResultsTitle {
+  margin: 1rem 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.webResults {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.webResult {
+  padding: 1rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  transition: box-shadow 0.2s;
+}
+
+.webResult:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.webResult h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+}
+
+.webResult a {
+  color: #0070f3;
+  text-decoration: none;
+}
+
+.webResult a:hover {
+  text-decoration: underline;
+}
+
+.webResult p {
+  margin: 0;
+  color: #666;
+  line-height: 1.5;
+}
+
+.codeResponse {
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.codeBlock {
+  margin: 0 !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+}
+
+.mathSolution {
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.mathSolution h3 {
+  color: #333;
+  margin: 1rem 0 0.5rem 0;
+}
+
+.problem {
+  font-size: 1.2rem;
+  color: #0070f3;
+  margin: 0.5rem 0;
+}
+
+.steps {
+  margin: 1rem 0;
+}
+
+.step {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.8rem 0;
+  line-height: 1.5;
+}
+
+.stepNumber {
+  color: #0070f3;
+  font-weight: bold;
+  min-width: 2rem;
+}
+
+.stepContent {
+  flex: 1;
+}
+
+.finalSolution {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #2e7d32;
+  margin: 0.5rem 0;
+}
+
+.imageResponse {
+  width: 100%;
+}
+
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.imageWrapper {
+  position: relative;
+  padding-top: 75%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.imageWrapper img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  transition: transform 0.2s;
+}
+
+.imageWrapper img:hover {
+  transform: scale(1.05);
+} 

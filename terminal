@@ -1,0 +1,7 @@
+mkdir ai-search-assistant
+cd ai-search-assistant
+npm init -y
+npm install next react react-dom typescript @types/react @types/node @google/generative-ai google-search-results-nodejs react-markdown react-syntax-highlighter @types/react-syntax-highlighter @chakra-ui/react @emotion/react @emotion/styled framer-motion react-icons @types/google-search-results-nodejs
+npm install next react react-dom typescript @types/react @types/node @google/generative-ai google-search-results-nodejs react-markdown react-syntax-highlighter @types/react-syntax-highlighter @chakra-ui/react @emotion/react @emotion/styled framer-motion react-icons @types/google-search-results-nodejs
+rm -rf node_modules package-lock.json
+npm install 
