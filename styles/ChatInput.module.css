@@ -1,49 +1,81 @@
 .inputContainer {
+  width: 100%;
   max-width: 800px;
   margin: 0 auto;
   position: relative;
+}
+
+.textareaWrapper {
+  position: relative;
+  background-color: rgba(64,65,79,1);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 0 15px rgba(0,0,0,0.1);
 }
 
 .input {
   width: 100%;
   min-height: 48px;
   max-height: 200px;
-  background-color: rgba(64,65,79,1);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 0.75rem;
-  padding: 0.75rem 3rem 0.75rem 1rem;
+  padding: 12px 45px 12px 15px;
+  background: transparent;
   color: #ECECF1;
   font-size: 1rem;
   line-height: 1.5;
   resize: none;
+  border: none;
   outline: none;
-  box-shadow: 0 0 15px rgba(0,0,0,0.1);
-}
-
-.input:focus {
-  border-color: rgba(255,255,255,0.2);
 }
 
 .sendButton {
   position: absolute;
-  right: 0.75rem;
-  bottom: 0.75rem;
+  right: 8px;
+  bottom: 8px;
   background: transparent;
   border: none;
   color: #ECECF1;
+  padding: 6px;
+  border-radius: 6px;
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.375rem;
-  opacity: 0.8;
-  transition: opacity 0.2s, background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .sendButton:hover:not(:disabled) {
-  opacity: 1;
   background-color: rgba(255,255,255,0.1);
 }
 
 .sendButton:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .inputContainer {
+    padding: 0 0.5rem;
+  }
+
+  .input {
+    font-size: 0.9rem;
+    min-height: 40px;
+    padding: 10px 40px 10px 12px;
+  }
+
+  .sendButton {
+    padding: 4px;
+    right: 6px;
+    bottom: 6px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .inputContainer {
+    padding: 0 1rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .inputContainer {
+    padding: 0 2rem;
+  }
 } 

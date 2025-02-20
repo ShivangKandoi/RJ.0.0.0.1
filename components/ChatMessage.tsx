@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import { Box, Flex, Icon, IconButton } from '@chakra-ui/react';
-import { FiUser, FiCopy, FiThumbsUp, FiThumbsDown } from 'react-icons/fi';
+import { FiUser, FiCopy, FiThumbsUp, FiThumbsDown, FiSearch, FiBook } from 'react-icons/fi';
 import { RiRobot2Line } from 'react-icons/ri';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import type { Components } from 'react-markdown';
+import styles from '../styles/ChatMessage.module.css';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -21,27 +22,125 @@ interface CodeBlockProps {
   children: string | string[];
 }
 
+// Add a type for the formatted content
+type FormattedContent = string | ReactNode;
+
 export default function ChatMessage({ role, content, complete }: ChatMessageProps) {
-  const [formattedContent, setFormattedContent] = useState(content);
+  const [formattedContent, setFormattedContent] = useState<FormattedContent>(content);
   const isUser = role === 'user';
 
   useEffect(() => {
     // Format the content, handling web search results specially
-    let formatted = content;
-    if (content.includes('🔍 Web Search Results:')) {
-      formatted = content.replace(
-        /(🔍 Web Search Results:.*?🤖 AI Response.*?\n\n)/g,
-        (match) => {
-          return match.split('\n').map(line => {
-            if (line.startsWith('http')) {
-              return `<${line}>`;
-            }
-            return line;
-          }).join('\n');
-        }
+    let formatted: FormattedContent = content;
+    if (content.includes('🔍 Searching for')) {
+      if (content.includes('Research Summary:')) {
+        // Handle full search response with results
+        const [summary, ...rest] = content.split('Sources:');
+        const sources = rest.join('Sources:');
+
+        formatted = (
+          <>
+            <div className={styles.researchSummary}>
+              <div className={styles.summaryTitle}>
+                <FiBook /> Research Summary
+              </div>
+              <ul className={styles.keyPoints}>
+                {summary.split('\n')
+                  .filter(line => line.trim().startsWith('-'))
+                  .map((point, index) => (
+                    <li key={index} className={styles.keyPoint}>
+                      <span className={styles.bulletPoint}>•</span>
+                      {point.replace('-', '').trim()}
+                    </li>
+                  ))}
+              </ul>
+              {sources && (
+                <div className={styles.sources}>
+                  <div className={styles.sourceTitle}>Sources:</div>
+                  <div className={styles.sourceList}>
+                    {sources.split('\n')
+                      .filter(line => line.trim().length > 0)
+                      .map((source, index) => {
+                        if (source.includes('Link:')) {
+                          const [title, url] = source.split('Link:');
+                          return (
+                            <div key={index} className={styles.sourceItem}>
+                              <span className={styles.sourceNumber}>[{index + 1}]</span>
+                              <a 
+                                href={url?.trim()} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className={styles.sourceLink}
+                              >
+                                {title.trim()}
+                              </a>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
+                  </div>
+                </div>
+              )}
+            </div>
+            {content.includes('🤖 Based on') && (
+              <div className={styles.aiResponse}>
+                <div className={styles.aiResponseTitle}>
+                  <RiRobot2Line /> AI Analysis
+                </div>
+                <ReactMarkdown
+                  remarkPlugins={[remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                  components={components}
+                >
+                  {content.split('🤖 Based on')[1]}
+                </ReactMarkdown>
+              </div>
+            )}
+          </>
+        );
+      } else if (content.includes('search attempt failed')) {
+        // Handle failed search response
+        formatted = (
+          <>
+            <div className={styles.searchProcess}>
+              <FiSearch className={styles.searchIcon} />
+              Search attempt failed
+            </div>
+            <div className={styles.aiResponse}>
+              <ReactMarkdown
+                remarkPlugins={[remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+                components={components}
+              >
+                {content.split('🤖 Based on')[1] || content}
+              </ReactMarkdown>
+            </div>
+          </>
+        );
+      } else {
+        // Handle initial search message
+        formatted = (
+          <div className={styles.searchProcess}>
+            <FiSearch className={styles.searchIcon} />
+            Searching for up-to-date information...
+          </div>
+        );
+      }
+    } else {
+      // Handle regular responses
+      formatted = (
+        <ReactMarkdown
+          remarkPlugins={[remarkMath]}
+          rehypePlugins={[rehypeKatex]}
+          components={components}
+        >
+          {content}
+        </ReactMarkdown>
       );
     }
-    setFormattedContent(formatted.replace(/```(\w+)?\n/g, '```$1\n'));
+    
+    setFormattedContent(formatted);
   }, [content]);
 
   const components: Components = {
@@ -166,6 +265,7 @@ export default function ChatMessage({ role, content, complete }: ChatMessageProp
                 lineHeight: 'tall',
               })}
             >
+              {typeof formattedContent === 'string' ? (
               <ReactMarkdown
                 remarkPlugins={[remarkMath]}
                 rehypePlugins={[rehypeKatex]}
@@ -173,6 +273,9 @@ export default function ChatMessage({ role, content, complete }: ChatMessageProp
               >
                 {formattedContent}
               </ReactMarkdown>
+              ) : (
+                formattedContent
+              )}
               {/* Only show cursor for assistant messages that are not complete */}
               {role === 'assistant' && !complete && (
                 <Box

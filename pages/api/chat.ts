@@ -1,13 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import SerpApi from 'google-search-results-nodejs';
 
-if (!process.env.GEMINI_API_KEY || !process.env.SERP_API_KEY) {
-  throw new Error('Missing required API keys');
+if (!process.env.GEMINI_API_KEY) {
+  throw new Error('Missing required API key');
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const search = new SerpApi.SerpApiSearch(process.env.SERP_API_KEY);
 
 // System prompt to define the AI's behavior and capabilities
 const SYSTEM_PROMPT = `You are RaaVaan Junior (RJ), a highly capable AI assistant with expertise in programming, mathematics, and scientific concepts. Your responses should be:
@@ -36,6 +34,48 @@ Remember to:
 - Provide references when appropriate
 - Use markdown formatting for better readability`;
 
+// Helper function to perform web search using the search API
+async function performWebSearch(query: string): Promise<string> {
+  try {
+    const response = await fetch('http://localhost:3000/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, type: 'text' })
+    });
+
+    if (!response.ok) {
+      throw new Error('Search failed');
+    }
+
+    const data = await response.json();
+    
+    if (!data.webResults || data.webResults.length === 0) {
+      return '';
+    }
+
+    // Format the results in the same style we were using before
+    let formattedResults = '🔍 Research Summary:\n';
+    
+    // Add bullet points from search results
+    data.webResults.forEach((result: any) => {
+      if (result.snippet) {
+        formattedResults += `- ${result.snippet.trim()}\n`;
+      }
+    });
+
+    // Add sources section
+    formattedResults += '\nSources:\n';
+    data.webResults.forEach((result: any, index: number) => {
+      formattedResults += `[${index + 1}] ${result.title}\nLink: ${result.link}\n`;
+    });
+
+    return formattedResults;
+  } catch (error) {
+    console.error('Search error:', error);
+    throw error;
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -45,13 +85,10 @@ export default async function handler(
   }
 
   try {
-    const { message } = req.body;
-    let webResults = '';
-    const needsWebSearch = message.length > 100 || message.includes('?');
+    const { message, systemPrompt } = req.body;
 
-    // Initialize model with system prompt
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-1.5-pro",
       generationConfig: {
         temperature: 0.7,
         topP: 0.8,
@@ -59,15 +96,39 @@ export default async function handler(
       }
     });
 
-    // Combine system prompt with user message
-    const prompt = `${SYSTEM_PROMPT}\n\nUser: ${message}\n\nAssistant:`;
+    let needsWebSearch = false;
+    try {
+      const searchAnalysis = await model.generateContent(`
+        Analyze if this query needs current or factual information from the web.
+        Reply with only "yes" or "no": "${message}"
+      `);
+      
+      needsWebSearch = searchAnalysis.response.text().toLowerCase().includes('yes');
+    } catch (error) {
+      console.error('Search analysis error:', error);
+      needsWebSearch = false;
+    }
 
-    // Generate AI response with context from web results if available
-    const finalPrompt = needsWebSearch 
-      ? `${prompt}\n\nContext from web search:\n${webResults}\n\nResponse:`
-      : prompt;
+    let webResults = '';
 
-    const result = await model.generateContentStream(finalPrompt);
+    if (needsWebSearch) {
+      try {
+        res.write("🔍 Searching for up-to-date information...\n\n");
+        webResults = await performWebSearch(message);
+      } catch (searchError) {
+        console.error('Search error:', searchError);
+        webResults = "Note: Web search was attempted but failed. Providing best available response.\n\n";
+        needsWebSearch = false;
+      }
+    }
+
+    const prompt = `${systemPrompt}\n\n${
+      needsWebSearch ? 
+      `Here are the latest search results:\n${webResults}\n\nBased on these search results, please provide a comprehensive summary. Format your response as:\n\n🤖 Based on my research: [your detailed summary]` 
+      : ''
+    }User: ${message}\n\nAssistant:`;
+
+    const result = await model.generateContentStream(prompt);
 
     for await (const chunk of result.stream) {
       const chunkText = chunk.text();
@@ -75,8 +136,13 @@ export default async function handler(
     }
 
     res.end();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Chat error:', error);
-    res.status(500).json({ error: 'An error occurred while processing your request.' });
+    const errorMessage = error.message.includes('429') 
+      ? "I apologize, but I'm experiencing high traffic. Please try again in a moment."
+      : "An error occurred while processing your request.";
+    
+    res.status(error.message.includes('429') ? 429 : 500)
+      .json({ error: errorMessage });
   }
 } 
