@@ -1,9 +1,9 @@
 import { useEffect, useState, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
-import { Box, Flex, Icon, IconButton } from '@chakra-ui/react';
-import { FiUser, FiCopy, FiThumbsUp, FiThumbsDown, FiSearch, FiBook } from 'react-icons/fi';
+import { atomDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import { Box, Flex, Icon, IconButton, Text, useToast } from '@chakra-ui/react';
+import { FiUser, FiCopy, FiThumbsUp, FiThumbsDown, FiSearch, FiBook, FiExternalLink } from 'react-icons/fi';
 import { RiRobot2Line } from 'react-icons/ri';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -23,163 +23,185 @@ interface CodeBlockProps {
 }
 
 // Add a type for the formatted content
-type FormattedContent = string | ReactNode;
+type FormattedContent = string | JSX.Element;
+
+// Update the getFaviconUrl helper function
+function getFaviconUrl(url: string) {
+  try {
+    const domain = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+  } catch {
+    return null;
+  }
+}
 
 export default function ChatMessage({ role, content, complete }: ChatMessageProps) {
   const [formattedContent, setFormattedContent] = useState<FormattedContent>(content);
   const isUser = role === 'user';
+  const toast = useToast();
+
+  const handleCopy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied to clipboard",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+    }
+  };
 
   useEffect(() => {
-    // Format the content, handling web search results specially
-    let formatted: FormattedContent = content;
-    if (content.includes('🔍 Searching for')) {
-      if (content.includes('Research Summary:')) {
-        // Handle full search response with results
-        const [summary, ...rest] = content.split('Sources:');
-        const sources = rest.join('Sources:');
+    if (content.includes('🔍 Research Summary')) {
+      const sections = content.split('\n\nSources:');
+      const summary = sections[0];
+      const sources = sections[1] || '';
 
-        formatted = (
-          <>
-            <div className={styles.researchSummary}>
-              <div className={styles.summaryTitle}>
-                <FiBook /> Research Summary
-              </div>
-              <ul className={styles.keyPoints}>
-                {summary.split('\n')
-                  .filter(line => line.trim().startsWith('-'))
-                  .map((point, index) => (
-                    <li key={index} className={styles.keyPoint}>
-                      <span className={styles.bulletPoint}>•</span>
-                      {point.replace('-', '').trim()}
-                    </li>
-                  ))}
-              </ul>
-              {sources && (
-                <div className={styles.sources}>
-                  <div className={styles.sourceTitle}>Sources:</div>
-                  <div className={styles.sourceList}>
-                    {sources.split('\n')
-                      .filter(line => line.trim().length > 0)
-                      .map((source, index) => {
-                        if (source.includes('Link:')) {
-                          const [title, url] = source.split('Link:');
-                          return (
-                            <div key={index} className={styles.sourceItem}>
-                              <span className={styles.sourceNumber}>[{index + 1}]</span>
-                              <a 
-                                href={url?.trim()} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className={styles.sourceLink}
-                              >
-                                {title.trim()}
-                              </a>
-                            </div>
-                          );
-                        }
-                        return null;
-                      })}
-                  </div>
-                </div>
-              )}
-            </div>
-            {content.includes('🤖 Based on') && (
-              <div className={styles.aiResponse}>
-                <div className={styles.aiResponseTitle}>
-                  <RiRobot2Line /> AI Analysis
-                </div>
-                <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                  components={components}
-                >
-                  {content.split('🤖 Based on')[1]}
-                </ReactMarkdown>
-              </div>
-            )}
-          </>
-        );
-      } else if (content.includes('search attempt failed')) {
-        // Handle failed search response
-        formatted = (
-          <>
-            <div className={styles.searchProcess}>
-              <FiSearch className={styles.searchIcon} />
-              Search attempt failed
-            </div>
-            <div className={styles.aiResponse}>
+      const formatted = (
+        <Box className={styles.researchContainer}>
+          {/* Summary Section */}
+          <Box className={styles.summarySection}>
+            <Flex align="center" className={styles.summaryHeader}>
+              <Icon as={FiSearch} className={styles.searchIcon} />
+              <Text fontWeight="bold" fontSize="lg">Research Summary</Text>
+            </Flex>
+            <Box className={styles.summaryContent}>
               <ReactMarkdown
                 remarkPlugins={[remarkMath]}
                 rehypePlugins={[rehypeKatex]}
                 components={components}
               >
-                {content.split('🤖 Based on')[1] || content}
+                {summary.replace('🔍 Research Summary:', '')}
               </ReactMarkdown>
-            </div>
-          </>
-        );
-      } else {
-        // Handle initial search message
-        formatted = (
-          <div className={styles.searchProcess}>
-            <FiSearch className={styles.searchIcon} />
-            Searching for up-to-date information...
-          </div>
-        );
-      }
-    } else {
-      // Handle regular responses
-      formatted = (
-        <ReactMarkdown
-          remarkPlugins={[remarkMath]}
-          rehypePlugins={[rehypeKatex]}
-          components={components}
-        >
-          {content}
-        </ReactMarkdown>
+            </Box>
+          </Box>
+
+          {/* Sources Section */}
+          {sources && (
+            <Box className={styles.sourcesSection}>
+              <Text fontSize="sm" color="gray.400" mb={2}>Sources</Text>
+              <Flex className={styles.sourcesList} wrap="wrap" gap={2}>
+                {sources.split('\n').map((source, index) => {
+                  if (!source.trim()) return null;
+                  
+                  // Extract URL from the source string
+                  const urlMatch = source.match(/https?:\/\/[^\s]+/);
+                  if (!urlMatch) return null;
+                  
+                  const url = urlMatch[0];
+                  const faviconUrl = getFaviconUrl(url);
+                  
+                  try {
+                    const domain = new URL(url).hostname.replace('www.', '');
+                    
+                    return (
+                      <a
+                        key={index}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.sourceChip}
+                      >
+                        {faviconUrl && (
+                          <img 
+                            src={faviconUrl}
+                            alt=""
+                            className={styles.favicon}
+                            onError={(e) => {
+                              // Hide broken favicon
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        )}
+                        <span className={styles.siteName}>{domain}</span>
+                      </a>
+                    );
+                  } catch {
+                    return null;
+                  }
+                })}
+              </Flex>
+            </Box>
+          )}
+        </Box>
       );
+      setFormattedContent(formatted);
+    } else if (content.includes('search attempt failed')) {
+      const formatted = (
+        <Box className={styles.errorContainer}>
+          <Flex align="center" className={styles.errorHeader}>
+            <Icon as={FiSearch} className={styles.searchIcon} />
+            <Text>Search attempt failed</Text>
+          </Flex>
+          <Box className={styles.errorContent}>
+            <ReactMarkdown
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+              components={components}
+            >
+              {content.split('🤖 Based on')[1] || content}
+            </ReactMarkdown>
+          </Box>
+        </Box>
+      );
+      setFormattedContent(formatted);
+    } else {
+      const formatted = (
+        <Box className={styles.messageContent}>
+          <ReactMarkdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+            components={components}
+          >
+            {content}
+          </ReactMarkdown>
+        </Box>
+      );
+      setFormattedContent(formatted);
     }
-    
-    setFormattedContent(formatted);
   }, [content]);
 
   const components: Components = {
-    code: ({ className, children, ...props }) => {
+    code({ node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '');
-      const isInline = !match;
+      const language = match ? match[1] : '';
       
-      return !isInline ? (
-        <Box my={3} borderRadius="md" overflow="hidden">
-          <SyntaxHighlighter
-            style={vscDarkPlus as any}
-            language={match ? match[1] : ''}
-            PreTag="div"
-            customStyle={{
-              margin: 0,
-              borderRadius: '4px',
-              background: '#1e1e1e',
-              fontSize: '14px',
-            }}
-          >
-            {String(children).replace(/\n$/, '')}
-          </SyntaxHighlighter>
-        </Box>
-      ) : (
-        <Box
-          as="code"
-          bg="#1e1e1e"
-          px={1}
-          borderRadius="sm"
-          fontSize="14px"
-          {...props}
-        >
-          {children}
-        </Box>
-      );
+      if (!inline && language) {
+        return (
+          <div className={styles.codeBlock}>
+            <div className={styles.codeHeader}>
+              <span className={styles.language}>{language}</span>
+              <button 
+                onClick={() => handleCopy(String(children))}
+                className={styles.copyButton}
+              >
+                <FiCopy size={14} />
+              </button>
+            </div>
+            <SyntaxHighlighter
+              style={atomDark}
+              language={language}
+              PreTag="div"
+              {...props}
+            >
+              {String(children).replace(/\n$/, '')}
+            </SyntaxHighlighter>
+          </div>
+        );
+      }
+      return <code className={className} {...props}>{children}</code>;
     },
     p: ({ children }) => (
-      <Box 
-        as="p" 
+      <Text 
+        as="div" 
         mb={isUser ? 1 : 2}
         lineHeight="tall"
         textAlign="left"
@@ -187,55 +209,39 @@ export default function ChatMessage({ role, content, complete }: ChatMessageProp
         fontWeight="normal"
       >
         {children}
-      </Box>
+      </Text>
     )
   };
 
   return (
-    <Box w="100%" bg={isUser ? 'transparent' : '#212121'}>
+    <Box 
+      w="100%" 
+      bg={isUser ? 'transparent' : '#212121'}
+      position="relative"
+      py={isUser ? 2 : 4}
+    >
       <Flex
-        py={4}
-        px={0}
-        minH="40px"
         maxW="48rem"
         mx="auto"
+        px={{ base: 4, md: 6 }}
         direction="column"
+        position="relative"
       >
         <Flex 
           w="full" 
-          px={6}
           flexDirection={isUser ? 'row-reverse' : 'row'}
           gap={4}
           alignItems="flex-start"
         >
-          {/* Only show icon for AI responses */}
-          {!isUser && (
-            <Box flexShrink={0}>
-              <Flex
-                w="28px"
-                h="28px"
-                bg="purple.500"
-                borderRadius="sm"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Icon
-                  as={RiRobot2Line}
-                  color="white"
-                  boxSize="16px"
-                />
-              </Flex>
-            </Box>
-          )}
           <Box 
             flex="1"
-            pl={isUser ? 0 : 0}
-            pr={isUser ? 0 : 8}
             display="flex"
             justifyContent={isUser ? 'flex-end' : 'flex-start'}
+            position="relative"
           >
             <Box
-              maxW={isUser ? "75%" : "90%"}
+              maxW={isUser ? "80%" : "100%"}
+              minW={isUser ? "auto" : "0"}
               color="white"
               className="math-content"
               sx={{
@@ -256,23 +262,26 @@ export default function ChatMessage({ role, content, complete }: ChatMessageProp
               {...(isUser && {
                 bg: '#2C2C2C',
                 borderRadius: '20px',
-                px: 5,
-                py: 2.5,
+                px: 4,
+                py: 2,
                 boxShadow: 'sm',
                 border: '1px solid',
                 borderColor: 'whiteAlpha.100',
                 fontSize: '16px',
-                lineHeight: 'tall',
+                lineHeight: '1.5',
+                wordBreak: 'break-word',
+                whiteSpace: 'pre-wrap',
+                display: 'inline-block'
               })}
             >
               {typeof formattedContent === 'string' ? (
-              <ReactMarkdown
-                remarkPlugins={[remarkMath]}
-                rehypePlugins={[rehypeKatex]}
-                components={components}
-              >
-                {formattedContent}
-              </ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                  components={components}
+                >
+                  {formattedContent}
+                </ReactMarkdown>
               ) : (
                 formattedContent
               )}
@@ -301,9 +310,9 @@ export default function ChatMessage({ role, content, complete }: ChatMessageProp
         {/* Action buttons - only for AI responses */}
         {!isUser && complete && (
           <Flex 
-            mt={2} 
+            mt={3}
             gap={1.5}
-            ml="52px"
+            ml={{ base: "44px", md: "52px" }}
           >
             <IconButton
               icon={<FiCopy size="16px" />}

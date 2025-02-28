@@ -14,42 +14,29 @@ const MessageSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   }
-}, { 
-  _id: false,
-  timestamps: true  // Add timestamps to track message order
-});
+}, { _id: false });
 
 const ChatSchema = new mongoose.Schema({
   userId: {
-    type: String,
-    required: true,
-    index: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
   title: {
     type: String,
-    required: true
+    required: true,
+    trim: true,
+    maxlength: 100
   },
   messages: {
     type: [MessageSchema],
-    default: [],
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+    default: []
   }
 }, {
-  timestamps: true  // Add timestamps to the chat document
+  timestamps: true
 });
 
-// Add a pre-save middleware to update the updatedAt field
-ChatSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
-});
+// Add index for better query performance
+ChatSchema.index({ userId: 1, createdAt: -1 });
 
 export default mongoose.models.Chat || mongoose.model('Chat', ChatSchema); 

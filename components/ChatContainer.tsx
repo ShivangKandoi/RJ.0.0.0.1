@@ -14,6 +14,7 @@ import {
   Avatar,
   IconButton,
   Icon,
+  Image,
 } from '@chakra-ui/react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
@@ -241,7 +242,10 @@ Remember: Only search when necessary. If you have sufficient knowledge, respond 
           const chatTitle = message.slice(0, 40) + (message.length > 40 ? '...' : '');
           const response = await fetch('/api/chats', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              ...(session?.user && { 'Authorization': `Bearer ${session.user.id}` })
+            },
             body: JSON.stringify({
               title: chatTitle,
               messages: finalMessages,
@@ -249,7 +253,10 @@ Remember: Only search when necessary. If you have sufficient knowledge, respond 
             }),
           });
 
-          if (!response.ok) throw new Error('Failed to create chat');
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to create chat');
+          }
           
           const newChat = await response.json();
           setChats(prev => [newChat, ...prev]);
@@ -257,6 +264,7 @@ Remember: Only search when necessary. If you have sufficient knowledge, respond 
           setMessages(finalMessages);
         } catch (error) {
           console.error('Error creating chat:', error);
+          throw error;
         }
       }
     } catch (error: any) {
@@ -371,6 +379,8 @@ Remember: Only search when necessary. If you have sufficient knowledge, respond 
           alignItems="center"
           justifyContent="space-between"
           px={4}
+          borderBottom="1px solid"
+          borderColor="whiteAlpha.100"
           transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
           zIndex={10}
         >
@@ -380,7 +390,28 @@ Remember: Only search when necessary. If you have sufficient knowledge, respond 
             color="white"
             letterSpacing="tight"
             className={styles.brandName}
+            display="flex"
+            alignItems="center"
           >
+            <Box 
+              as="div" 
+              width="24px" 
+              height="24px" 
+              marginRight="8px"
+              display="flex"
+              alignItems="center"
+            >
+              <Image 
+                src="/zemon.svg" 
+                alt="Zemon AI Logo" 
+                width="100%"
+                height="100%"
+                style={{ 
+                  filter: 'invert(1)',
+                  opacity: 0.9
+                }} 
+              />
+            </Box>
             Zemon AI
           </Text>
 
@@ -416,131 +447,122 @@ Remember: Only search when necessary. If you have sufficient knowledge, respond 
           </Menu>
         </Flex>
 
+        {/* Chat content */}
         <Box
-          ml={isSidebarOpen ? "260px" : "0"}
+          className={styles.chatWrapper}
           transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
           h="100vh"
           display="flex"
           flexDirection="column"
           pt="60px"
+          position="relative"
+          bg="#212121"
         >
+          {/* Messages container */}
           <Box 
             flex="1" 
             overflowY="auto" 
+            className={styles.messagesContainer}
             position="relative"
-            maxW="800px"
-            w="100%"
-            px={4}
-            sx={{
-              transform: isSidebarOpen ? 'translateX(-130px)' : 'translateX(0)',
-              transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              margin: '0 auto',
-              '&::-webkit-scrollbar': {
-                width: '4px',
-              },
-              '&::-webkit-scrollbar-track': {
-                background: 'transparent',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                background: 'whiteAlpha.100',
-                borderRadius: '4px',
-              },
-            }}
+            pb="180px"
           >
-            {messages.length === 0 ? (
-              <Container maxW="800px" pt={20} pb={20} px={4}>
-                <VStack spacing={12}>
-                  <VStack spacing={4}>
-                    <Heading
-                      as="h1"
-                      size="2xl"
-                      color="white"
-                      textAlign="center"
-                      fontWeight="semibold"
-                    >
-                      Zemon AI
-                    </Heading>
-                    <Text color="gray.400" fontSize="lg" textAlign="center">
-                      Your AI Assistant for Seamless Conversations
-                    </Text>
-                  </VStack>
-                  <VStack spacing={3} w="full">
-                    <Text color="gray.400" fontSize="sm">
-                      Examples
-                    </Text>
-                    {[
-                      "Explain quantum computing in simple terms",
-                      "What are some creative uses of AI in education?",
-                      "Write a Python function to find prime numbers"
-                    ].map((example) => (
-                      <Button
-                        key={example}
-                        onClick={() => handleSendMessage(example)}
-                        variant="ghost"
-                        w="full"
-                        py={3}
-                        px={4}
-                        height="auto"
-                        justifyContent="flex-start"
-                        alignItems="center"
+            <div>
+              {messages.length === 0 ? (
+                <Container maxW="48rem" pt={20} pb={20} px={4}>
+                  <VStack spacing={12}>
+                    <VStack spacing={4}>
+                      <Heading
+                        as="h1"
+                        size="2xl"
                         color="white"
-                        bg="rgba(255,255,255,0.05)"
-                        borderRadius="md"
-                        _hover={{
-                          bg: 'whiteAlpha.200',
-                        }}
-                        fontSize="13px"
-                        fontWeight="normal"
-                        whiteSpace="normal"
-                        textAlign="left"
-                        position="relative"
-                        pl={4}
-                        pr={8}
+                        textAlign="center"
+                        fontWeight="semibold"
                       >
-                        {example}
-                        <Icon
-                          as={FiMoreHorizontal}
-                          position="absolute"
-                          right={3}
-                          color="gray.500"
-                        />
-                      </Button>
-                    ))}
+                        Zemon AI
+                      </Heading>
+                      <Text as="div" color="gray.400" fontSize="lg" textAlign="center">
+                        Your AI Assistant for Seamless Conversations
+                      </Text>
+                    </VStack>
+                    <VStack spacing={3} w="full">
+                      <Text as="div" color="gray.400" fontSize="sm">
+                        Examples
+                      </Text>
+                      {[
+                        "Explain quantum computing in simple terms",
+                        "What are some creative uses of AI in education?",
+                        "Write a Python function to find prime numbers"
+                      ].map((example) => (
+                        <Button
+                          key={example}
+                          onClick={() => handleSendMessage(example)}
+                          variant="ghost"
+                          w="full"
+                          py={3}
+                          px={4}
+                          height="auto"
+                          justifyContent="flex-start"
+                          alignItems="center"
+                          color="white"
+                          bg="rgba(255,255,255,0.05)"
+                          borderRadius="md"
+                          _hover={{
+                            bg: 'whiteAlpha.200',
+                          }}
+                          fontSize="13px"
+                          fontWeight="normal"
+                          whiteSpace="normal"
+                          textAlign="left"
+                          position="relative"
+                          pl={4}
+                          pr={8}
+                        >
+                          {example}
+                          <Icon
+                            as={FiMoreHorizontal}
+                            position="absolute"
+                            right={3}
+                            color="gray.500"
+                          />
+                        </Button>
+                      ))}
+                    </VStack>
                   </VStack>
-                </VStack>
-              </Container>
-            ) : (
-              <VStack spacing={0} align="stretch">
-                {messages.map((message, index) => (
-                  <Box 
-                    key={index} 
-                    position="relative"
-                  >
-                    <ChatMessage
-                      role={message.role}
-                      content={message.content}
-                      complete={message.complete}
-                    />
-                  </Box>
-                ))}
-                {/* This div will be our scroll target */}
-                <div ref={messagesEndRef} style={{ height: '20px' }} />
-              </VStack>
-            )}
+                </Container>
+              ) : (
+                <Box as="div" w="100%">
+                  {messages.map((message, index) => (
+                    <Box 
+                      key={index} 
+                      w="100%"
+                      bg={message.role === 'assistant' ? '#212121' : 'transparent'}
+                      as="div"
+                    >
+                      <ChatMessage
+                        role={message.role}
+                        content={message.content}
+                        complete={message.complete}
+                      />
+                    </Box>
+                  ))}
+                  <Box as="div" ref={messagesEndRef} height="24px" />
+                </Box>
+              )}
+            </div>
           </Box>
           
+          {/* Input container */}
           <Box
-            position="relative"
-            bg="#212121"
-            maxW="800px"
-            w="100%"
-            sx={{
-              transform: isSidebarOpen ? 'translateX(-130px)' : 'translateX(0)',
-              transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              margin: '0 auto',
-            }}
+            position="fixed"
+            bottom={0}
+            left={isSidebarOpen ? "260px" : "0"}
+            right={0}
+            bg="linear-gradient(180deg, rgba(33,33,33,0) 0%, #212121 20%)"
+            pt={8}
+            pb={6}
+            transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
           >
-            <Box p={4}>
+            <Box maxW="48rem" mx="auto" px={{ base: 4, md: 6 }} w="100%">
               <ChatInput onSendMessage={handleSendMessage} disabled={isLoading} />
               <Text
                 textAlign="center"

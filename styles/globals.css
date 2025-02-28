@@ -43,4 +43,23 @@ a {
   html {
     font-size: 16px;
   }
+}
+
+/* Add to existing styles */
+.favicon {
+  border-radius: 50%;
+  background: white;
+}
+
+/* Ensure proper logo spacing in header */
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-logo img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 } 
